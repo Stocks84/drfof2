@@ -8,7 +8,7 @@ class CustomUser(AbstractUser):
     favorite_drink = models.CharField(max_length=100, blank=True, null=True)
     profile_picture = models.ImageField(
         upload_to='profile_pics/',
-        default='OF-logo.png',
+        default='profile_pics/default.png',
         null=True,
         blank=True
     )
