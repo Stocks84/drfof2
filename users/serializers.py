@@ -35,3 +35,15 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ['bio', 'location', 'favorite_drink', 'profile_picture']
+
+
+# Change Password
+class PasswordChangeSerializer(serializers.Serializer):
+    old_password = serializers.CharField(write_only=True, required=True)
+    new_password = serializers.CharField(write_only=True, required=True)
+
+    def validate_old_password(self, value):
+        user = self.context['request'].user
+        if not user.check_password(value):
+            raise serializers.ValidationError("Old password is incorrect")
+        return value
