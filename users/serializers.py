@@ -28,3 +28,10 @@ class UserSerializer(serializers.ModelSerializer):
         )
         return user
 
+
+# Profile updates
+
+class UserProfileUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['bio', 'location', 'favorite_drink', 'profile_picture']
