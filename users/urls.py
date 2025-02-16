@@ -15,5 +15,4 @@ urlpatterns = [
     path('delete-account/', UserDeleteView.as_view(), name='delete-account'),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
