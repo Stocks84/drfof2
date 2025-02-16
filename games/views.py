@@ -1,8 +1,15 @@
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, pagination
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from .models import Game
 from .serializers import GameSerializer
+
+
+class GamePagination(pagination.PageNumberPagination):
+    page_size = 10  # Default page size
+    page_size_query_param = 'page_size'  # Allow clients to override page size
+    max_page_size = 50
+
 
 class GameListCreateView(generics.ListCreateAPIView):
     queryset = Game.objects.all().order_by('-created_at')
