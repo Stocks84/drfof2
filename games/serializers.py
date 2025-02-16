@@ -1,11 +1,21 @@
 from rest_framework import serializers
 from .models import Game, Like, Comment
 
+
 class GameSerializer(serializers.ModelSerializer):
+    likes_count = serializers.SerializerMethodField()
+    comments_count = serializers.SerializerMethodField()
+
     class Meta:
         model = Game
         fields = '__all__'
         read_only_fields = ['creator', 'created_at', 'updated_at']
+
+    def get_likes_count(self, obj):
+        return obj.likes.count()
+
+    def get_comments_count(self, obj):
+        return obj.comments.count()
 
 
 class LikeSerializer(serializers.ModelSerializer):
