@@ -44,22 +44,26 @@ class LikeGameView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
-        game = Game.objects.get(pk=kwargs['id'])
+        game = Game.objects.get(pk=kwargs['pk'])
         like, created = Like.objects.get_or_create(user=request.user, game=game)
-        if not created:
-            return Response({"detail": "Already liked"}, status=400)
-        return Response({"detail": "Game liked"}, status=201)
+
+        if not created:  # If the like already exists, delete it (toggle unlike)
+            like.delete()
+            return Response({"detail": "Unliked game"}, status=200)
+
+        return Response({"detail": "Liked game"}, status=200)
+
 
 
 class UnlikeGameView(generics.DestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def delete(self, request, *args, **kwargs):
-        like = Like.objects.filter(user=request.user, game_id=kwargs['id']).first()
+        like = Like.objects.filter(user=request.user, game_id=kwargs['pk']).first()
         if like:
             like.delete()
-            return Response({"detail": "Like removed"}, status=204)
-        return Response({"detail": "Not liked yet"}, status=400)
+            return Response({"detail": "Like removed"}, status=200)
+        return Response({"detail": "Not liked yet"}, status=200)
 
 
 class CommentGameView(generics.CreateAPIView):
@@ -67,7 +71,7 @@ class CommentGameView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        game = Game.objects.get(pk=self.kwargs['id'])
+        game = Game.objects.get(pk=self.kwargs['pk'])
         serializer.save(user=self.request.user, game=game)
 
 
