@@ -12,13 +12,29 @@ class GamePagination(pagination.PageNumberPagination):
 
 
 class GameListCreateView(generics.ListCreateAPIView):
-    queryset = Game.objects.all().order_by('-created_at')
     serializer_class = GameSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
     pagination_class = GamePagination
 
+    def get_queryset(self):
+        print("get_queryset() is being called!")
+        queryset = Game.objects.all().order_by('-created_at')
+        user_games = self.request.query_params.get('user_games')
+
+        print(f"Query Params: {self.request.query_params}")  # Check received query params
+
+        if user_games == 'true' and self.request.user.is_authenticated:
+            print(f"Filtering games for user: {self.request.user}")  # Debug
+            queryset = queryset.filter(creator=self.request.user)
+        else:
+            print("Not filtering user games.")  # Debug
+
+        return queryset
+
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
+
+
 
 
 class GameDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -92,3 +108,6 @@ class DeleteCommentView(generics.DestroyAPIView):
             comment.delete()
             return Response({"detail": "Comment deleted"}, status=204)
         return Response({"detail": "Not found or unauthorized"}, status=403)
+
+
+
