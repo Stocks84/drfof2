@@ -31,4 +31,4 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = ['id', 'user', 'game', 'text', 'created_at']
-        read_only_fields = ['user']
+        read_only_fields = ['user', 'game']

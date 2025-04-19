@@ -17,24 +17,22 @@ class GameListCreateView(generics.ListCreateAPIView):
     pagination_class = GamePagination
 
     def get_queryset(self):
-        print("get_queryset() is being called!")
         queryset = Game.objects.all().order_by('-created_at')
         user_games = self.request.query_params.get('user_games')
 
-        print(f"Query Params: {self.request.query_params}")  # Check received query params
+        print("API Request received with params:", self.request.query_params)
 
         if user_games == 'true' and self.request.user.is_authenticated:
-            print(f"Filtering games for user: {self.request.user}")  # Debug
+            print(f"Filtering games for user: {self.request.user.username} (ID: {self.request.user.id})")  # Debug
             queryset = queryset.filter(creator=self.request.user)
-        else:
-            print("Not filtering user games.")  # Debug
+    
+        print(f"Returning {queryset.count()} games after filtering")  # Debug
 
         return queryset
 
     def perform_create(self, serializer):
+        print(f"Saving new game for user: {self.request.user} (ID: {self.request.user.id})")
         serializer.save(creator=self.request.user)
-
-
 
 
 class GameDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -96,7 +94,7 @@ class ViewComments(generics.ListAPIView):
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        return Comment.objects.filter(game_id=self.kwargs['id'])
+        return Comment.objects.filter(game_id=self.kwargs['pk'])
 
 
 class DeleteCommentView(generics.DestroyAPIView):
