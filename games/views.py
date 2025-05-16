@@ -97,10 +97,12 @@ class ViewComments(generics.ListAPIView):
 
 
 class DeleteCommentView(generics.DestroyAPIView):
+    queryset = Comment.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
     def delete(self, request, *args, **kwargs):
-        comment = Comment.objects.filter(id=kwargs['id'], user=request.user).first()
+        comment_id = kwargs.get('pk')
+        comment = Comment.objects.filter(id=comment_id, user=request.user).first()
         if comment:
             comment.delete()
             return Response({"detail": "Comment deleted"}, status=204)
