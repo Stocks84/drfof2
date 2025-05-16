@@ -105,7 +105,8 @@ class DeleteCommentView(generics.DestroyAPIView):
             comment.delete()
             return Response({"detail": "Comment deleted"}, status=204)
         return Response({"detail": "Not found or unauthorized"}, status=403)
-    
+
+
 class EditCommentView(generics.UpdateAPIView):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer

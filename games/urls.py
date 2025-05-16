@@ -6,7 +6,8 @@ from .views import (
     UnlikeGameView,
     CommentGameView,
     ViewComments,
-    DeleteCommentView
+    DeleteCommentView,
+    EditCommentView
 )
 
 urlpatterns = [
@@ -17,4 +18,5 @@ urlpatterns = [
     path('games/<int:pk>/comment/', CommentGameView.as_view(), name='game-comment'),
     path('games/<int:pk>/comments/', ViewComments.as_view(), name='view-comments'),
     path('games/comments/<int:pk>/', DeleteCommentView.as_view(), name='delete-comment'),
+    path('games/comments/<int:pk>/edit/', EditCommentView.as_view(), name='edit-comment'),
 ]
