@@ -25,7 +25,7 @@ class GameListCreateView(generics.ListCreateAPIView):
         if user_games == 'true' and self.request.user.is_authenticated:
             print(f"Filtering games for user: {self.request.user.username} (ID: {self.request.user.id})")  # Debug
             queryset = queryset.filter(creator=self.request.user)
-    
+
         print(f"Returning {queryset.count()} games after filtering")  # Debug
 
         return queryset
@@ -68,7 +68,6 @@ class LikeGameView(generics.CreateAPIView):
         return Response({"detail": "Liked game"}, status=200)
 
 
-
 class UnlikeGameView(generics.DestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -106,6 +105,18 @@ class DeleteCommentView(generics.DestroyAPIView):
             comment.delete()
             return Response({"detail": "Comment deleted"}, status=204)
         return Response({"detail": "Not found or unauthorized"}, status=403)
+    
+class EditCommentView(generics.UpdateAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
-
-
+    def patch(self, request, *args, **kwargs):
+        comment = self.get_object()
+        if comment.user != request.user:
+            return Response({"detail": "You do not have permission to edit this comment."}, status=status.HTTP_403_FORBIDDEN)
+        
+        serializer = self.get_serializer(comment, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
