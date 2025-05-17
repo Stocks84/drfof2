@@ -51,27 +51,36 @@ class GameDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 # --- Like and Unlike Views (Separate) ---
 class LikeGameView(generics.CreateAPIView):
-    serializer_class = LikeSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         game = get_object_or_404(Game, pk=kwargs['pk'])
-        like, created = Like.objects.get_or_create(user=request.user, game=game)
+        user = request.user
+        
+        # Check if the like already exists
+        like, created = Like.objects.get_or_create(user=user, game=game)
+        
         if created:
             return Response({"detail": "Liked game"}, status=status.HTTP_200_OK)
-        return Response({"detail": "You have already liked this game."}, status=status.HTTP_400_BAD_REQUEST)
-
+        
+        # If like already exists, just return 200 without error
+        return Response({"detail": "Already liked this game"}, status=status.HTTP_200_OK)
 
 class UnlikeGameView(generics.DestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def delete(self, request, *args, **kwargs):
         game = get_object_or_404(Game, pk=kwargs['pk'])
-        like = Like.objects.filter(user=request.user, game=game).first()
+        user = request.user
+        
+        # Attempt to delete the like
+        like = Like.objects.filter(user=user, game=game).first()
         if like:
             like.delete()
             return Response({"detail": "Unliked game"}, status=status.HTTP_200_OK)
-        return Response({"detail": "You have not liked this game yet."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # If like does not exist, just return 200 without error
+        return Response({"detail": "Already not liked this game"}, status=status.HTTP_200_OK)
 
 
 # --- Comment Management ---

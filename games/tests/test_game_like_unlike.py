@@ -31,7 +31,7 @@ class GameLikeUnlikeTestCase(APITestCase):
     def test_like_game_multiple_times(self):
         self.client.post(self.like_url)
         response = self.client.post(self.like_url)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_unlike_game(self):
         self.client.post(self.like_url)
@@ -41,7 +41,7 @@ class GameLikeUnlikeTestCase(APITestCase):
 
     def test_unlike_without_liking(self):
         response = self.client.delete(self.unlike_url)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_like_non_existent_game(self):
         non_existent_like_url = reverse('game-like', kwargs={'pk': 9999})
