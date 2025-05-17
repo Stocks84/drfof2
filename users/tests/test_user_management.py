@@ -2,6 +2,7 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
 from users.models import CustomUser
+from django.contrib.auth.hashers import check_password
 
 
 class UserManagementTestCase(APITestCase):
@@ -94,3 +95,35 @@ class UserManagementTestCase(APITestCase):
         self.client.logout()
         response = self.client.delete(self.delete_account_url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+# Password Security
+class UserSecurityTestCase(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.register_url = reverse('register')
+
+    def test_secure_password_hashing(self):
+        """Test that user passwords are securely hashed"""
+        response = self.client.post(self.register_url, {
+            "username": "secureuser",
+            "email": "secureuser@example.com",
+            "password": "SecureP@ssw0rd123"
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        user = CustomUser.objects.get(username="secureuser")
+
+        # Ensure password is hashed
+        self.assertTrue(check_password("SecureP@ssw0rd123", user.password))
+        self.assertNotEqual(user.password, "SecureP@ssw0rd123")  # It should be hashed
+
+    def test_reject_weak_password(self):
+        """Test that weak passwords are rejected"""
+        response = self.client.post(self.register_url, {
+            "username": "weakuser",
+            "email": "weakuser@example.com",
+            "password": "1234"
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("password", response.data)
