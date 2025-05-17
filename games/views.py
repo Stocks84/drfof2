@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from .models import Game, Like, Comment
 from .serializers import GameSerializer, LikeSerializer, CommentSerializer
+from django.shortcuts import get_object_or_404
 
 
 class GamePagination(pagination.PageNumberPagination):
@@ -58,7 +59,7 @@ class LikeGameView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
-        game = Game.objects.get(pk=kwargs['pk'])
+        game = get_object_or_404(Game, pk=kwargs['pk'])
         like, created = Like.objects.get_or_create(user=request.user, game=game)
 
         if not created:  # If the like already exists, delete it (toggle unlike)

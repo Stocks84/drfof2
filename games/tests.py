@@ -131,3 +131,90 @@ class GameTestCase(APITestCase):
         response = self.client.post(self.comment_url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+
+#   like/Unlike tests
+
+class GameLikeUnlikeTestCase(APITestCase):
+    def setUp(self):
+        """Set up users and test data"""
+        self.user = CustomUser.objects.create_user(
+            username="testuser",
+            email="test@example.com",
+            password="password123"
+        )
+
+        self.other_user = CustomUser.objects.create_user(
+            username="otheruser",
+            email="other@example.com",
+            password="password123"
+        )
+
+        self.login_url = reverse('token_obtain_pair')  # /api/token/
+
+        # Obtain JWT token for testuser
+        response = self.client.post(self.login_url, {
+            'username': 'testuser',
+            'password': 'password123'
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.access_token = response.data['access']
+
+        # Authenticate all requests
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.access_token}')
+
+        # Create a test game
+        self.game = Game.objects.create(
+            title="Beer Pong",
+            description="Classic party game",
+            creator=self.user
+        )
+        self.like_url = reverse('game-like', kwargs={'pk': self.game.pk})  # /api/games/{id}/like/
+
+    def test_like_game(self):
+        """Test liking a game"""
+        response = self.client.post(self.like_url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(Like.objects.filter(user=self.user, game=self.game).exists())
+
+    def test_unlike_game(self):
+        """Test unliking a game (toggle)"""
+        # First like the game
+        Like.objects.create(user=self.user, game=self.game)
+        response = self.client.post(self.like_url, format="json")  # Unlike
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(Like.objects.filter(user=self.user, game=self.game).exists())
+
+    def test_like_game_multiple_times(self):
+        """Test that a user cannot like the same game multiple times"""
+        # First like the game
+        Like.objects.create(user=self.user, game=self.game)
+        response = self.client.post(self.like_url, format="json")  # Attempt to like again (toggle)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(Like.objects.filter(user=self.user, game=self.game).exists())
+
+    def test_like_game_unauthenticated(self):
+        """Test liking a game as an unauthenticated user (should fail)"""
+        self.client.credentials()  # Remove authentication
+        response = self.client.post(self.like_url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_unlike_game_unauthenticated(self):
+        """Test unliking a game as an unauthenticated user (should fail)"""
+        self.client.credentials()  # Remove authentication
+        response = self.client.post(self.like_url, format="json")  # Toggle (like/unlike)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_like_non_existent_game(self):
+        """Test liking a non-existent game (should return 404)"""
+        non_existent_like_url = reverse('game-like', kwargs={'pk': 9999})  # Non-existent game ID
+        response = self.client.post(non_existent_like_url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_unlike_without_liking(self):
+        """Test unliking a game without liking it first (no error)"""
+        response = self.client.post(self.like_url, format="json")  # First like
+        response = self.client.post(self.like_url, format="json")  # Unlike
+        response = self.client.post(self.like_url, format="json")  # Attempt unlike again (no like exists)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(Like.objects.filter(user=self.user, game=self.game).exists())
+        
