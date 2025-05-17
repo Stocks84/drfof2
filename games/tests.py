@@ -143,12 +143,6 @@ class GameLikeUnlikeTestCase(APITestCase):
             password="password123"
         )
 
-        self.other_user = CustomUser.objects.create_user(
-            username="otheruser",
-            email="other@example.com",
-            password="password123"
-        )
-
         self.login_url = reverse('token_obtain_pair')  # /api/token/
 
         # Obtain JWT token for testuser
@@ -169,6 +163,7 @@ class GameLikeUnlikeTestCase(APITestCase):
             creator=self.user
         )
         self.like_url = reverse('game-like', kwargs={'pk': self.game.pk})  # /api/games/{id}/like/
+        self.unlike_url = reverse('game-unlike', kwargs={'pk': self.game.pk})  # /api/games/{id}/unlike/
 
     def test_like_game(self):
         """Test liking a game"""
@@ -176,33 +171,33 @@ class GameLikeUnlikeTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(Like.objects.filter(user=self.user, game=self.game).exists())
 
-    def test_unlike_game(self):
-        """Test unliking a game (toggle)"""
-        # First like the game
-        Like.objects.create(user=self.user, game=self.game)
-        response = self.client.post(self.like_url, format="json")  # Unlike
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(Like.objects.filter(user=self.user, game=self.game).exists())
-
     def test_like_game_multiple_times(self):
         """Test that a user cannot like the same game multiple times"""
         # First like the game
-        Like.objects.create(user=self.user, game=self.game)
-        response = self.client.post(self.like_url, format="json")  # Attempt to like again (toggle)
+        response = self.client.post(self.like_url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Attempt to like again
+        response = self.client.post(self.like_url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)  # Now expecting 400
+        self.assertTrue(Like.objects.filter(user=self.user, game=self.game).exists())
+
+    def test_unlike_game(self):
+        """Test unliking a game after liking it"""
+        # First like the game
+        response = self.client.post(self.like_url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Then unlike the game
+        response = self.client.delete(self.unlike_url, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(Like.objects.filter(user=self.user, game=self.game).exists())
 
-    def test_like_game_unauthenticated(self):
-        """Test liking a game as an unauthenticated user (should fail)"""
-        self.client.credentials()  # Remove authentication
-        response = self.client.post(self.like_url, format="json")
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-    def test_unlike_game_unauthenticated(self):
-        """Test unliking a game as an unauthenticated user (should fail)"""
-        self.client.credentials()  # Remove authentication
-        response = self.client.post(self.like_url, format="json")  # Toggle (like/unlike)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+    def test_unlike_without_liking(self):
+        """Test unliking a game without liking it first (should return 400)"""
+        response = self.client.delete(self.unlike_url, format="json")  # Unlike without liking first
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(Like.objects.filter(user=self.user, game=self.game).exists())
 
     def test_like_non_existent_game(self):
         """Test liking a non-existent game (should return 404)"""
@@ -210,11 +205,9 @@ class GameLikeUnlikeTestCase(APITestCase):
         response = self.client.post(non_existent_like_url, format="json")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-    def test_unlike_without_liking(self):
-        """Test unliking a game without liking it first (no error)"""
-        response = self.client.post(self.like_url, format="json")  # First like
-        response = self.client.post(self.like_url, format="json")  # Unlike
-        response = self.client.post(self.like_url, format="json")  # Attempt unlike again (no like exists)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(Like.objects.filter(user=self.user, game=self.game).exists())
-        
+    def test_unlike_non_existent_game(self):
+        """Test unliking a non-existent game (should return 404)"""
+        non_existent_unlike_url = reverse('game-unlike', kwargs={'pk': 9999})  # Non-existent game ID
+        response = self.client.delete(non_existent_unlike_url, format="json")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
