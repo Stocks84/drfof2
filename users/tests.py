@@ -5,6 +5,7 @@ from .models import CustomUser
 
 
 class UserProfileTest(APITestCase):
+    
     def setUp(self):
         """Set up a test user and obtain JWT token"""
         self.user = CustomUser.objects.create_user(
@@ -13,6 +14,7 @@ class UserProfileTest(APITestCase):
             password='password123'
         )
         self.login_url = reverse('token_obtain_pair')        # /api/token/
+        self.register_url = reverse('register')              # /api/register/
         self.profile_url = reverse('user-profile')           # /api/profile/
         self.password_change_url = reverse('change-password')  # /api/change-password/
         self.delete_account_url = reverse('delete-account')   # /api/delete-account/
@@ -28,6 +30,29 @@ class UserProfileTest(APITestCase):
         # Authenticate all requests
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.access_token}')
 
+    # --- User Registration Tests ---
+    def test_user_registration(self):
+        """Test user registration"""
+        data = {
+            "username": "newuser",
+            "email": "newuser@example.com",
+            "password": "newuserpassword123"
+        }
+        response = self.client.post(self.register_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(CustomUser.objects.filter(username="newuser").exists())
+
+    def test_registration_with_existing_username(self):
+        """Test registration with an existing username (should fail)"""
+        data = {
+            "username": "testuser",  # Username already exists
+            "email": "anotheruser@example.com",
+            "password": "anotherpassword123"
+        }
+        response = self.client.post(self.register_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    # --- User Profile Tests ---
     def test_retrieve_user_profile(self):
         """Test that an authenticated user can retrieve their profile"""
         response = self.client.get(self.profile_url)
@@ -39,12 +64,18 @@ class UserProfileTest(APITestCase):
         """Test that an authenticated user can update their profile"""
         data = {"bio": "Updated bio", "favorite_drink": "Whiskey Sour"}
         response = self.client.patch(self.profile_url, data, format="json")
-        
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.user.refresh_from_db()
         self.assertEqual(self.user.bio, "Updated bio")
         self.assertEqual(self.user.favorite_drink, "Whiskey Sour")
 
+    def test_unauthorized_profile_access(self):
+        """Test that an unauthenticated user cannot access profile"""
+        self.client.credentials()  # Remove authentication
+        response = self.client.get(self.profile_url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    # --- Password Change Tests ---
     def test_password_change(self):
         """Test that an authenticated user can change their password"""
         data = {
@@ -52,26 +83,42 @@ class UserProfileTest(APITestCase):
             "new_password": "NewSecurePass456!"
         }
         response = self.client.post(self.password_change_url, data, format="json")
-
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        
-        # Verify that the old password no longer works
+
+        # Verify old password no longer works
         self.client.credentials()  # Reset authentication
         login_response = self.client.post(self.login_url, {
             "username": "testuser",
             "password": "password123"
         }, format="json")
-        self.assertEqual(login_response.status_code, status.HTTP_401_UNAUTHORIZED)  # Old password should fail
+        self.assertEqual(login_response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-        # Verify that the new password works
+        # Verify new password works
         new_login_response = self.client.post(self.login_url, {
             "username": "testuser",
             "password": "NewSecurePass456!"
         }, format="json")
         self.assertEqual(new_login_response.status_code, status.HTTP_200_OK)
 
+    def test_password_change_with_incorrect_old_password(self):
+        """Test password change with incorrect old password (should fail)"""
+        data = {
+            "old_password": "wrongpassword",
+            "new_password": "NewSecurePass456!"
+        }
+        response = self.client.post(self.password_change_url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    # --- Account Deletion Tests ---
     def test_user_deletion(self):
         """Test that an authenticated user can delete their account"""
         response = self.client.delete(self.delete_account_url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(CustomUser.objects.filter(username="testuser").exists())
+
+    def test_unauthorized_user_deletion(self):
+        """Test that an unauthenticated user cannot delete an account"""
+        self.client.credentials()  # Remove authentication
+        response = self.client.delete(self.delete_account_url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
