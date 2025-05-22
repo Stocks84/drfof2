@@ -28,7 +28,7 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'unsafe-default-key')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['drf-old-fashion.herokuapp.com']
+ALLOWED_HOSTS = ['drf-old-fashion-118da20fd480.herokuapp.com']
 
 # Application definition
 INSTALLED_APPS = [
