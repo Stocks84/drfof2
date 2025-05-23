@@ -158,7 +158,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "https://drf-old-fashion-118da20fd480.herokuapp.com",  # Allow frontend to access Django backend
+    "https://old-fashion-9638ea885cfe.herokuapp.com",  # Allow frontend to access Django backend
 ]
 
 CORS_ALLOW_CREDENTIALS = True  # Allow cookies & authentication
