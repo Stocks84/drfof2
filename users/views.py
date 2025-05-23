@@ -25,6 +25,7 @@ class UserRegistrationView(generics.CreateAPIView):
     
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
+    permission_classes = [AllowAny]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
