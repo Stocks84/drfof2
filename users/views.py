@@ -6,7 +6,8 @@ from .models import CustomUser
 from .serializers import (
     UserSerializer,
     UserProfileUpdateSerializer,
-    PasswordChangeSerializer
+    PasswordChangeSerializer,
+    RegisterSerializer,
 )
 
 
@@ -20,6 +21,16 @@ class UserRegistrationView(generics.CreateAPIView):
         if serializer.is_valid():
             serializer.save()
             return Response({"message": "User created successfully"}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class RegisterView(generics.CreateAPIView):
+    serializer_class = RegisterSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response({"message": "User registered successfully"}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
